@@ -61,3 +61,27 @@ public abstract class Component {
         return enumValues;
     }
 }
+
+ private int indexOf(String str, String[] arr) {
+        for (int i=0; i < arr.length; i++) {
+            if (str.equals(arr[i])) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    public void destroy() {
+
+    }
+
+    public int getUid() {
+        return this.uid;
+    }
+
+    public static void init(int maxId) {
+        ID_COUNTER = maxId;
+    }
+}
+
