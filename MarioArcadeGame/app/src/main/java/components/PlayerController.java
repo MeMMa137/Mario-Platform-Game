@@ -119,3 +119,67 @@ public class PlayerController extends Component {
             }
             return;
         }
+
+
+if (hurtInvincibilityTimeLeft > 0) {
+            hurtInvincibilityTimeLeft -= dt;
+            blinkTime -= dt;
+
+            if (blinkTime <= 0) {
+                blinkTime = 0.2f;
+                if (spr.getColor().w == 1) {
+                    spr.setColor(new Vector4f(1, 1, 1, 0));
+                } else {
+                    spr.setColor(new Vector4f(1, 1, 1, 1));
+                }
+            } else {
+                if (spr.getColor().w == 0) {
+                    spr.setColor(new Vector4f(1, 1, 1, 1));
+                }
+            }
+        }
+
+        if (KeyListener.isKeyPressed(GLFW_KEY_RIGHT) || KeyListener.isKeyPressed(GLFW_KEY_D)) {
+            this.gameObject.transform.scale.x = playerWidth;
+            this.acceleration.x = walkSpeed;
+
+            if (this.velocity.x < 0) {
+                this.stateMachine.trigger("switchDirection");
+                this.velocity.x += slowDownForce;
+            } else {
+                this.stateMachine.trigger("startRunning");
+            }
+        } else if (KeyListener.isKeyPressed(GLFW_KEY_LEFT) || KeyListener.isKeyPressed(GLFW_KEY_A)) {
+            this.gameObject.transform.scale.x = -playerWidth;
+            this.acceleration.x = -walkSpeed;
+
+            if (this.velocity.x > 0) {
+                this.stateMachine.trigger("switchDirection");
+                this.velocity.x -= slowDownForce;
+            } else {
+                this.stateMachine.trigger("startRunning");
+            }
+        } else {
+            this.acceleration.x = 0;
+            if (this.velocity.x > 0) {
+                this.velocity.x = Math.max(0, this.velocity.x - slowDownForce);
+            } else if (this.velocity.x < 0) {
+                this.velocity.x = Math.min(0, this.velocity.x + slowDownForce);
+            }
+
+            if (this.velocity.x == 0) {
+                this.stateMachine.trigger("stopRunning");
+            }
+        }
+
+        if (KeyListener.keyBeginPress(GLFW_KEY_E) && playerState == PlayerState.Fire &&
+                Fireball.canSpawn()) {
+            Vector2f position = new Vector2f(this.gameObject.transform.position)
+                    .add(this.gameObject.transform.scale.x > 0
+                    ? new Vector2f(0.26f, 0)
+                    : new Vector2f(-0.26f, 0));
+            GameObject fireball = Prefabs.generateFireball(position);
+            fireball.getComponent(Fireball.class).goingRight =
+                    this.gameObject.transform.scale.x > 0;
+            Window.getScene().addGameObjectToScene(fireball);
+        }
