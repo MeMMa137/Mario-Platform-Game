@@ -44,3 +44,26 @@ public class QuestionBlock extends Block {
             spawnFlower();
         }
     }
+    
+private void doCoin(PlayerController playerController) {
+        GameObject coin = Prefabs.generateBlockCoin();
+        coin.transform.position.set(this.gameObject.transform.position);
+        coin.transform.position.y += 0.25f;
+        Window.getScene().addGameObjectToScene(coin);
+    }
+
+    private void spawnMushroom() {
+        GameObject mushroom = Prefabs.generateMushroom();
+        mushroom.transform.position.set(gameObject.transform.position);
+        mushroom.transform.position.y += 0.25f;
+        Window.getScene().addGameObjectToScene(mushroom);
+    }
+
+    private void spawnFlower() {
+        GameObject flower = Prefabs.generateFlower();
+        flower.transform.position.set(gameObject.transform.position);
+        flower.transform.position.y += 0.25f;
+        Window.getScene().addGameObjectToScene(flower);
+    }
+}
+
