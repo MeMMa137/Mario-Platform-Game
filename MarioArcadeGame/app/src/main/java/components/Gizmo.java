@@ -109,3 +109,41 @@ public class Gizmo extends Component {
         this.xAxisSprite.setColor(new Vector4f(0, 0, 0, 0));
         this.yAxisSprite.setColor(new Vector4f(0, 0, 0, 0));
     }
+    
+private boolean checkXHoverState() {
+        Vector2f mousePos = new Vector2f(MouseListener.getWorldX(), MouseListener.getWorldY());
+        if (mousePos.x <= xAxisObject.transform.position.x + (gizmoHeight / 2.0f) &&
+                mousePos.x >= xAxisObject.transform.position.x - (gizmoWidth / 2.0f) &&
+                mousePos.y >= xAxisObject.transform.position.y - (gizmoHeight / 2.0f) &&
+                mousePos.y <= xAxisObject.transform.position.y + (gizmoWidth / 2.0f)) {
+            xAxisSprite.setColor(xAxisColorHover);
+            return true;
+        }
+
+        xAxisSprite.setColor(xAxisColor);
+        return false;
+    }
+
+    private boolean checkYHoverState() {
+        Vector2f mousePos = new Vector2f(MouseListener.getWorldX(), MouseListener.getWorldY());
+        if (mousePos.x <= yAxisObject.transform.position.x + (gizmoWidth / 2.0f) &&
+                mousePos.x >= yAxisObject.transform.position.x - (gizmoWidth / 2.0f) &&
+                mousePos.y <= yAxisObject.transform.position.y + (gizmoHeight / 2.0f) &&
+                mousePos.y >= yAxisObject.transform.position.y - (gizmoHeight / 2.0f)) {
+            yAxisSprite.setColor(yAxisColorHover);
+            return true;
+        }
+
+        yAxisSprite.setColor(yAxisColor);
+        return false;
+    }
+
+    public void setUsing() {
+        this.using = true;
+    }
+
+    public void setNotUsing() {
+        this.using = false;
+        this.setInactive();
+    }
+}
