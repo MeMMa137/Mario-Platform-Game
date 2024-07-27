@@ -140,3 +140,26 @@ public class MouseControls extends Component {
             }
         }
     }
+    
+private boolean blockInSquare(float x, float y) {
+        PropertiesWindow propertiesWindow = Window.getImguiLayer().getPropertiesWindow();
+        Vector2f start = new Vector2f(x, y);
+        Vector2f end = new Vector2f(start).add(new Vector2f(Settings.GRID_WIDTH, Settings.GRID_HEIGHT));
+        Vector2f startScreenf = MouseListener.worldToScreen(start);
+        Vector2f endScreenf = MouseListener.worldToScreen(end);
+        Vector2i startScreen = new Vector2i((int)startScreenf.x + 2, (int)startScreenf.y + 2);
+        Vector2i endScreen = new Vector2i((int)endScreenf.x - 2, (int)endScreenf.y - 2);
+        float[] gameObjectIds = propertiesWindow.getPickingTexture().readPixels(startScreen, endScreen);
+
+        for (int i = 0; i < gameObjectIds.length; i++) {
+            if (gameObjectIds[i] >= 0) {
+                GameObject pickedObj = Window.getScene().getGameObject((int)gameObjectIds[i]);
+                if (pickedObj.getComponent(NonPickable.class) == null) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+}
