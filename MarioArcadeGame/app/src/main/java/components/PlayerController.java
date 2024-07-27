@@ -183,3 +183,104 @@ if (hurtInvincibilityTimeLeft > 0) {
                     this.gameObject.transform.scale.x > 0;
             Window.getScene().addGameObjectToScene(fireball);
         }
+        
+ checkOnGround();
+        if (KeyListener.isKeyPressed(GLFW_KEY_SPACE) && (jumpTime > 0 || onGround || groundDebounce > 0)) {
+            if ((onGround || groundDebounce > 0) && jumpTime == 0) {
+                AssetPool.getSound("assets/sounds/jump-small.ogg").play();
+                jumpTime = 28;
+                this.velocity.y = jumpImpulse;
+            } else if (jumpTime > 0) {
+                jumpTime--;
+                this.velocity.y = ((jumpTime / 2.2f) * jumpBoost);
+            } else {
+                this.velocity.y = 0;
+            }
+            groundDebounce = 0;
+        } else if (enemyBounce > 0) {
+            enemyBounce--;
+            this.velocity.y = ((enemyBounce / 2.2f) * jumpBoost);
+        }else if (!onGround) {
+            if (this.jumpTime > 0) {
+                this.velocity.y *= 0.35f;
+                this.jumpTime = 0;
+            }
+            groundDebounce -= dt;
+            this.acceleration.y = Window.getPhysics().getGravity().y * 0.7f;
+        } else {
+            this.velocity.y = 0;
+            this.acceleration.y = 0;
+            groundDebounce = groundDebounceTime;
+        }
+
+        this.velocity.x += this.acceleration.x * dt;
+        this.velocity.y += this.acceleration.y * dt;
+        this.velocity.x = Math.max(Math.min(this.velocity.x, this.terminalVelocity.x), -this.terminalVelocity.x);
+        this.velocity.y = Math.max(Math.min(this.velocity.y, this.terminalVelocity.y), -this.terminalVelocity.y);
+        this.rb.setVelocity(this.velocity);
+        this.rb.setAngularVelocity(0);
+
+        if (!onGround) {
+            stateMachine.trigger("jump");
+        } else {
+            stateMachine.trigger("stopJumping");
+        }
+    }
+
+    public void checkOnGround() {
+        float innerPlayerWidth = this.playerWidth * 0.6f;
+        float yVal = playerState == PlayerState.Small ? -0.14f : -0.24f;
+        onGround = Physics2D.checkOnGround(this.gameObject, innerPlayerWidth, yVal);
+    }
+
+    public void setPosition(Vector2f newPos) {
+        this.gameObject.transform.position.set(newPos);
+        this.rb.setPosition(newPos);
+    }
+
+    public void powerup() {
+        if (playerState == PlayerState.Small) {
+            playerState = PlayerState.Big;
+            AssetPool.getSound("assets/sounds/powerup.ogg").play();
+            gameObject.transform.scale.y = 0.42f;
+            PillboxCollider pb = gameObject.getComponent(PillboxCollider.class);
+            if (pb != null) {
+                jumpBoost *= bigJumpBoostFactor;
+                walkSpeed *= bigJumpBoostFactor;
+                pb.setHeight(0.42f);
+            }
+        } else if (playerState == PlayerState.Big) {
+            playerState = PlayerState.Fire;
+            AssetPool.getSound("assets/sounds/powerup.ogg").play();
+        }
+
+        stateMachine.trigger("powerup");
+    }
+    
+     if (!playWinAnimation) {
+            playWinAnimation = true;
+            velocity.set(0.0f, 0.0f);
+            acceleration.set(0.0f, 0.0f);
+            rb.setVelocity(velocity);
+            rb.setIsSensor();
+            rb.setBodyType(BodyType.Static);
+            gameObject.transform.position.x = flagpole.transform.position.x;
+            AssetPool.getSound("assets/sounds/main-theme-overworld.ogg").stop();
+            AssetPool.getSound("assets/sounds/flagpole.ogg").play();
+        }
+    }
+
+    @Override
+    public void beginCollision(GameObject collidingObject, Contact contact, Vector2f contactNormal) {
+        if (isDead) return;
+
+        if (collidingObject.getComponent(Ground.class) != null) {
+            if (Math.abs(contactNormal.x) > 0.8f) {
+                this.velocity.x = 0;
+            } else if (contactNormal.y > 0.8f) {
+                this.velocity.y = 0;
+                this.acceleration.y = 0;
+                this.jumpTime = 0;
+            }
+        }
+    }
