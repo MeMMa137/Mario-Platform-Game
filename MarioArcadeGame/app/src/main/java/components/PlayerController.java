@@ -284,3 +284,62 @@ if (hurtInvincibilityTimeLeft > 0) {
             }
         }
     }
+
+public void enemyBounce() {
+        this.enemyBounce = 8;
+    }
+
+    public boolean isDead() {
+        return this.isDead;
+    }
+
+    public boolean isHurtInvincible() {
+        return this.hurtInvincibilityTimeLeft > 0 || playWinAnimation;
+    }
+
+    public boolean isInvincible() {
+        return this.playerState == PlayerController.PlayerState.Invincible ||
+                this.hurtInvincibilityTimeLeft > 0 || playWinAnimation;
+    }
+
+    public void die() {
+        this.stateMachine.trigger("die");
+        if (this.playerState == PlayerController.PlayerState.Small) {
+            this.velocity.set(0, 0);
+            this.acceleration.set(0, 0);
+            this.rb.setVelocity(new Vector2f());
+            this.isDead = true;
+            this.rb.setIsSensor();
+            AssetPool.getSound("assets/sounds/main-theme-overworld.ogg").stop();
+            AssetPool.getSound("assets/sounds/mario_die.ogg").play();
+            deadMaxHeight = this.gameObject.transform.position.y + 0.3f;
+            this.rb.setBodyType(BodyType.Static);
+            if (gameObject.transform.position.y > 0) {
+                deadMinHeight = -0.25f;
+            }
+        } else if (this.playerState == PlayerController.PlayerState.Big) {
+            this.playerState = PlayerController.PlayerState.Small;
+            gameObject.transform.scale.y = 0.25f;
+            PillboxCollider pb = gameObject.getComponent(PillboxCollider.class);
+            if (pb != null) {
+                jumpBoost /= bigJumpBoostFactor;
+                walkSpeed /= bigJumpBoostFactor;
+                pb.setHeight(0.25f);
+            }
+            hurtInvincibilityTimeLeft = hurtInvincibilityTime;
+            AssetPool.getSound("assets/sounds/pipe.ogg").play();
+        } else if (playerState == PlayerController.PlayerState.Fire) {
+            this.playerState = PlayerController.PlayerState.Big;
+            hurtInvincibilityTimeLeft = hurtInvincibilityTime;
+            AssetPool.getSound("assets/sounds/pipe.ogg").play();
+        }
+    }
+
+    public boolean hasWon() {
+        return false;
+    }
+
+    public boolean isSmall() {
+        return this.playerState == PlayerController.PlayerState.Small;
+    }
+}
