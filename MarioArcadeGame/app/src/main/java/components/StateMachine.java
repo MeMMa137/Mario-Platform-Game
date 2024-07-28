@@ -113,3 +113,34 @@ public class StateMachine extends Component {
             }
         }
     }
+    
+ @Override
+    public void editorUpdate(float dt) {
+        if (currentState != null) {
+            currentState.update(dt);
+            SpriteRenderer sprite = gameObject.getComponent(SpriteRenderer.class);
+            if (sprite != null) {
+                sprite.setSprite(currentState.getCurrentSprite());
+                sprite.setTexture(currentState.getCurrentSprite().getTexture());
+            }
+        }
+    }
+
+    @Override
+    public void imgui() {
+        for (AnimationState state : states) {
+            ImString title = new ImString(state.title);
+            ImGui.inputText("State: ", title);
+            state.title = title.get();
+
+            int index = 0;
+            for (Frame frame : state.animationFrames) {
+                float[] tmp = new float[1];
+                tmp[0] = frame.frameTime;
+                ImGui.dragFloat("Frame(" + index + ") Time: ", tmp, 0.01f);
+                frame.frameTime = tmp[0];
+                index++;
+            }
+        }
+    }
+}
