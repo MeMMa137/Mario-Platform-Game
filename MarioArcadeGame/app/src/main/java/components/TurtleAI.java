@@ -104,3 +104,43 @@ public class TurtleAI extends Component {
                 playerController.enemyBounce();
                 stomp();
                 walkSpeed *= 3.0f;
+} else if (movingDebounce < 0 && !playerController.isDead() &&
+                    !playerController.isHurtInvincible() &&
+                    (isMoving || !isDead) && contactNormal.y < 0.58f) {
+                playerController.die();
+                if (!playerController.isDead()) {
+                    contact.setEnabled(false);
+                }
+            } else if (!playerController.isDead() && !playerController.isHurtInvincible()) {
+                if (isDead && contactNormal.y > 0.58f) {
+                    playerController.enemyBounce();
+                    isMoving = !isMoving;
+                    goingRight = contactNormal.x < 0;
+                } else if (isDead && !isMoving) {
+                    isMoving = true;
+                    goingRight = contactNormal.x < 0;
+                    movingDebounce = 0.32f;
+                }
+            } else if (!playerController.isDead() && playerController.isHurtInvincible()) {
+                contact.setEnabled(false);
+            }
+        } else if (Math.abs(contactNormal.y) < 0.1f && !obj.isDead() && obj.getComponent(MushroomAI.class) == null) {
+            goingRight = contactNormal.x < 0;
+            if (isMoving && isDead) {
+                AssetPool.getSound("assets/sounds/bump.ogg").play();
+            }
+        }
+
+        if (obj.getComponent(Fireball.class) != null) {
+            if (!isDead) {
+                walkSpeed *= 3.0f;
+                stomp();
+            } else {
+                isMoving = !isMoving;
+                goingRight = contactNormal.x < 0;
+            }
+            obj.getComponent(Fireball.class).disappear();
+            contact.setEnabled(false);
+        }
+    }
+}
