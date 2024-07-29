@@ -67,3 +67,36 @@ public class Sound {
         alDeleteSources(sourceId);
         alDeleteBuffers(bufferId);
     }
+    
+ public void play() {
+        int state = alGetSourcei(sourceId, AL_SOURCE_STATE);
+        if (state == AL_STOPPED) {
+            isPlaying = false;
+            alSourcei(sourceId, AL_POSITION, 0);
+        }
+
+        if (!isPlaying) {
+            alSourcePlay(sourceId);
+            isPlaying = true;
+        }
+    }
+
+    public void stop() {
+        if (isPlaying) {
+            alSourceStop(sourceId);
+            isPlaying = false;
+        }
+    }
+
+    public String getFilepath() {
+        return this.filepath;
+    }
+
+    public boolean isPlaying() {
+        int state = alGetSourcei(sourceId, AL_SOURCE_STATE);
+        if (state == AL_STOPPED) {
+            isPlaying = false;
+        }
+        return isPlaying;
+    }
+}
