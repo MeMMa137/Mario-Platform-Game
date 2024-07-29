@@ -143,3 +143,101 @@ public class Physics2D {
         addBox2DCollider(rb, boxCollider);
         body.resetMassData();
     }
+
+
+public void resetPillboxCollider(Rigidbody2D rb, PillboxCollider pb) {
+        Body body = rb.getRawBody();
+        if (body == null) return;
+
+        int size = fixtureListSize(body);
+        for (int i = 0; i < size; i++) {
+            body.destroyFixture(body.getFixtureList());
+        }
+
+        addPillboxCollider(rb, pb);
+        body.resetMassData();
+    }
+
+    public void addPillboxCollider(Rigidbody2D rb, PillboxCollider pb) {
+        Body body = rb.getRawBody();
+        assert body != null : "Raw body must not be null";
+
+        addBox2DCollider(rb, pb.getBox());
+        addCircleCollider(rb, pb.getBottomCircle());
+    }
+
+    public void addBox2DCollider(Rigidbody2D rb, Box2DCollider boxCollider) {
+        Body body = rb.getRawBody();
+        assert body != null : "Raw body must not be null";
+
+        PolygonShape shape = new PolygonShape();
+        Vector2f halfSize = new Vector2f(boxCollider.getHalfSize()).mul(0.5f);
+        Vector2f offset = boxCollider.getOffset();
+        Vector2f origin = new Vector2f(boxCollider.getOrigin());
+        shape.setAsBox(halfSize.x, halfSize.y, new Vec2(offset.x, offset.y), 0);
+
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = shape;
+        fixtureDef.density = 1.0f;
+        fixtureDef.friction = rb.getFriction();
+        fixtureDef.userData = boxCollider.gameObject;
+        fixtureDef.isSensor = rb.isSensor();
+        body.createFixture(fixtureDef);
+    }
+
+    public void addCircleCollider(Rigidbody2D rb, CircleCollider circleCollider) {
+        Body body = rb.getRawBody();
+        assert body != null : "Raw body must not be null";
+
+        CircleShape shape = new CircleShape();
+        shape.setRadius(circleCollider.getRadius());
+        shape.m_p.set(circleCollider.getOffset().x, circleCollider.getOffset().y);
+
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = shape;
+        fixtureDef.density = 1.0f;
+        fixtureDef.friction = rb.getFriction();
+        fixtureDef.userData = circleCollider.gameObject;
+        fixtureDef.isSensor = rb.isSensor();
+        body.createFixture(fixtureDef);
+    }
+
+    public RaycastInfo raycast(GameObject requestingObject, Vector2f point1, Vector2f point2) {
+        RaycastInfo callback = new RaycastInfo(requestingObject);
+        world.raycast(callback, new Vec2(point1.x, point1.y),
+                new Vec2(point2.x, point2.y));
+        return callback;
+    }
+
+    private int fixtureListSize(Body body) {
+        int size = 0;
+        Fixture fixture = body.getFixtureList();
+        while (fixture != null) {
+            size++;
+            fixture = fixture.m_next;
+        }
+        return size;
+    }
+
+    public boolean isLocked() {
+        return world.isLocked();
+    }
+
+    public static boolean checkOnGround(
+            GameObject gameObject,
+            float innerPlayerWidth,
+            float height) {
+        Vector2f raycastBegin = new Vector2f(gameObject.transform.position);
+        raycastBegin.sub(innerPlayerWidth / 2.0f, 0.0f);
+        Vector2f raycastEnd = new Vector2f(raycastBegin).add(0.0f, height);
+
+        RaycastInfo info = Window.getPhysics().raycast(gameObject, raycastBegin, raycastEnd);
+
+        Vector2f raycast2Begin = new Vector2f(raycastBegin).add(innerPlayerWidth, 0.0f);
+        Vector2f raycast2End = new Vector2f(raycastEnd).add(innerPlayerWidth, 0.0f);
+        RaycastInfo info2 = Window.getPhysics().raycast(gameObject, raycast2Begin, raycast2End);
+
+        return (info.hit && info.hitObject != null && info.hitObject.getComponent(Ground.class) != null) ||
+                (info2.hit && info2.hitObject != null && info2.hitObject.getComponent(Ground.class) != null);
+    }
+}
