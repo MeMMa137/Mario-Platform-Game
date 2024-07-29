@@ -84,3 +84,83 @@ public class Rigidbody2D extends Component {
             this.rawBody.setGravityScale(gravityScale);
         }
     }
+
+
+ public void setIsSensor() {
+        isSensor = true;
+        if (rawBody != null) {
+            Window.getPhysics().setIsSensor(this);
+        }
+    }
+
+    public void setNotSensor() {
+        isSensor = false;
+        if (rawBody != null) {
+            Window.getPhysics().setNotSensor(this);
+        }
+    }
+
+    public float getFriction() {
+        return this.friction;
+    }
+
+    public boolean isSensor() {
+        return this.isSensor;
+    }
+
+    public float getAngularDamping() {
+        return angularDamping;
+    }
+
+    public void setAngularDamping(float angularDamping) {
+        this.angularDamping = angularDamping;
+    }
+
+    public float getLinearDamping() {
+        return linearDamping;
+    }
+
+    public void setLinearDamping(float linearDamping) {
+        this.linearDamping = linearDamping;
+    }
+
+    public float getMass() {
+        return mass;
+    }
+
+    public void setMass(float mass) {
+        this.mass = mass;
+    }
+
+    public BodyType getBodyType() {
+        return bodyType;
+    }
+
+    public void setBodyType(BodyType bodyType) {
+        this.bodyType = bodyType;
+    }
+
+    public boolean isFixedRotation() {
+        return fixedRotation;
+    }
+
+    public void setFixedRotation(boolean fixedRotation) {
+        this.fixedRotation = fixedRotation;
+    }
+
+    public boolean isContinuousCollision() {
+        return continuousCollision;
+    }
+
+    public void setContinuousCollision(boolean continuousCollision) {
+        this.continuousCollision = continuousCollision;
+    }
+
+    public Body getRawBody() {
+        return rawBody;
+    }
+
+    public void setRawBody(Body rawBody) {
+        this.rawBody = rawBody;
+    }
+}
