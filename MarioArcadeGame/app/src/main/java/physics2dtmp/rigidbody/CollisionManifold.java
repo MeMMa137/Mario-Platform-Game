@@ -23,3 +23,24 @@ public class CollisionManifold {
         this.depth = depth;
         isColliding = true;
     }
+    
+ public void addContactPoint(Vector2f contact) {
+        this.contactPoints.add(contact);
+    }
+
+    public Vector2f getNormal() {
+        return normal;
+    }
+
+    public List<Vector2f> getContactPoints() {
+        return contactPoints;
+    }
+
+    public float getDepth() {
+        return depth;
+    }
+
+    public boolean isColliding() {
+        return this.isColliding;
+    }
+}
