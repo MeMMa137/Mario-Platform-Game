@@ -187,3 +187,115 @@ public class Window implements Observer {
 
         Shader defaultShader = AssetPool.getShader("assets/shaders/default.glsl");
         Shader pickingShader = AssetPool.getShader("assets/shaders/pickingShader.glsl");
+        
+
+        while (!glfwWindowShouldClose(glfwWindow)) {
+            // Poll events
+            glfwPollEvents();
+
+            // Render pass 1. Render to picking texture
+            glDisable(GL_BLEND);
+            pickingTexture.enableWriting();
+
+            glViewport(0, 0, 3840, 2160);
+            glClearColor(0, 0, 0, 0);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            Renderer.bindShader(pickingShader);
+            currentScene.render();
+
+            pickingTexture.disableWriting();
+            glEnable(GL_BLEND);
+
+            // Render pass 2. Render actual game
+            DebugDraw.beginFrame();
+
+            this.framebuffer.bind();
+            Vector4f clearColor = currentScene.camera().clearColor;
+            glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            if (dt >= 0) {
+                Renderer.bindShader(defaultShader);
+                if (runtimePlaying) {
+                    currentScene.update(dt);
+                } else {
+                    currentScene.editorUpdate(dt);
+                }
+                currentScene.render();
+                DebugDraw.draw();
+            }
+            this.framebuffer.unbind();
+
+            if (RELEASE_BUILD) {
+                // NOTE: This is the most complicated piece for release builds. In release builds
+                //       we want to just blit the framebuffer to the main window so we can see the game
+                //
+                //       In non-release builds, we usually draw the framebuffer to an ImGui component as an image.
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer.getFboID());
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+                glBlitFramebuffer(0, 0, framebuffer.width, framebuffer.height, 0, 0, this.width, this.height,
+                        GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            } else {
+                this.imguiLayer.update(dt, currentScene);
+            }
+
+            KeyListener.endFrame();
+            MouseListener.endFrame();
+            glfwSwapBuffers(glfwWindow);
+
+            endTime = (float)glfwGetTime();
+            dt = endTime - beginTime;
+            beginTime = endTime;
+        }
+    }
+
+    public static int getWidth() {
+        return 3840;//get().width;
+    }
+
+    public static int getHeight() {
+        return 2160;//get().height;
+    }
+
+    public static void setWidth(int newWidth) {
+        get().width = newWidth;
+    }
+
+    public static void setHeight(int newHeight) {
+        get().height = newHeight;
+    }
+
+    public static Framebuffer getFramebuffer() {
+        return get().framebuffer;
+    }
+
+    public static float getTargetAspectRatio() {
+        return 16.0f / 9.0f;
+    }
+
+    public static ImGuiLayer getImguiLayer() {
+        return get().imguiLayer;
+    }
+
+    @Override
+    public void onNotify(GameObject object, Event event) {
+        switch (event.type) {
+            case GameEngineStartPlay:
+                this.runtimePlaying = true;
+                currentScene.save();
+                Window.changeScene(new LevelSceneInitializer());
+                break;
+            case GameEngineStopPlay:
+                this.runtimePlaying = false;
+                Window.changeScene(new LevelEditorSceneInitializer());
+                break;
+            case LoadLevel:
+                Window.changeScene(new LevelEditorSceneInitializer());
+                break;
+            case SaveLevel:
+                currentScene.save();
+                break;
+        }
+    }
+}
