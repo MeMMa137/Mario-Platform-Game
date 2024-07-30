@@ -187,3 +187,125 @@ public class RenderBatch implements Comparable<RenderBatch> {
 
         return false;
     }
+    
+private void loadVertexProperties(int index) {
+        SpriteRenderer sprite = this.sprites[index];
+
+        // Find offset within array (4 vertices per sprite)
+        int offset = index * 4 * VERTEX_SIZE;
+
+        Vector4f color = sprite.getColor();
+        Vector2f[] texCoords = sprite.getTexCoords();
+
+        int texId = 0;
+        if (sprite.getTexture() != null) {
+            for (int i = 0; i < textures.size(); i++) {
+                if (textures.get(i).equals(sprite.getTexture())) {
+                    texId = i + 1;
+                    break;
+                }
+            }
+        }
+
+        boolean isRotated = sprite.gameObject.transform.rotation != 0.0f;
+        Matrix4f transformMatrix = new Matrix4f().identity();
+        if (isRotated) {
+            transformMatrix.translate(sprite.gameObject.transform.position.x,
+                                        sprite.gameObject.transform.position.y, 0f);
+            transformMatrix.rotate((float)Math.toRadians(sprite.gameObject.transform.rotation),
+                    0, 0, 1);
+            transformMatrix.scale(sprite.gameObject.transform.scale.x,
+                    sprite.gameObject.transform.scale.y, 1);
+        }
+
+        // Add vertices with the appropriate properties
+        float xAdd = 0.5f;
+        float yAdd = 0.5f;
+        for (int i=0; i < 4; i++) {
+            if (i == 1) {
+                yAdd = -0.5f;
+            } else if (i == 2) {
+                xAdd = -0.5f;
+            } else if (i == 3) {
+                yAdd = 0.5f;
+            }
+
+            Vector4f currentPos = new Vector4f(sprite.gameObject.transform.position.x + (xAdd * sprite.gameObject.transform.scale.x),
+                    sprite.gameObject.transform.position.y + (yAdd * sprite.gameObject.transform.scale.y),
+                    0, 1);
+            if (isRotated) {
+                currentPos = new Vector4f(xAdd, yAdd, 0, 1).mul(transformMatrix);
+            }
+
+            // Load position
+            vertices[offset] = currentPos.x;
+            vertices[offset + 1] = currentPos.y;
+
+            // Load color
+            vertices[offset + 2] = color.x;
+            vertices[offset + 3] = color.y;
+            vertices[offset + 4] = color.z;
+            vertices[offset + 5] = color.w;
+
+            // Load texture coordinates
+            vertices[offset + 6] = texCoords[i].x;
+            vertices[offset + 7] = texCoords[i].y;
+
+            // Load texture id
+            vertices[offset + 8] = texId;
+
+            // Load entity id
+            vertices[offset + 9] = sprite.gameObject.getUid() + 1;
+
+            offset += VERTEX_SIZE;
+        }
+    }
+
+    private int[] generateIndices() {
+        // 6 indices per quad (3 per triangle)
+        int[] elements = new int[6 * maxBatchSize];
+        for (int i=0; i < maxBatchSize; i++) {
+            loadElementIndices(elements, i);
+        }
+
+        return elements;
+    }
+
+    private void loadElementIndices(int[] elements, int index) {
+        int offsetArrayIndex = 6 * index;
+        int offset = 4 * index;
+
+        // 3, 2, 0, 0, 2, 1        7, 6, 4, 4, 6, 5
+        // Triangle 1
+        elements[offsetArrayIndex] = offset + 3;
+        elements[offsetArrayIndex + 1] = offset + 2;
+        elements[offsetArrayIndex + 2] = offset + 0;
+
+        // Triangle 2
+        elements[offsetArrayIndex + 3] = offset + 0;
+        elements[offsetArrayIndex + 4] = offset + 2;
+        elements[offsetArrayIndex + 5] = offset + 1;
+    }
+
+    public boolean hasRoom() {
+        return this.hasRoom;
+    }
+
+    public boolean hasTextureRoom() {
+        return this.textures.size() < 7;
+    }
+
+    public boolean hasTexture(Texture tex) {
+        return this.textures.contains(tex);
+    }
+
+    public int zIndex() {
+        return this.zIndex;
+    }
+
+    @Override
+    public int compareTo(RenderBatch o) {
+        return Integer.compare(this.zIndex, o.zIndex());
+    }
+}
+
