@@ -254,3 +254,103 @@ public class LevelEditorSceneInitializer extends SceneInitializer {
                     GameObject object = Prefabs.generateTurtle();
                     levelEditorStuff.getComponent(MouseControls.class).pickupObject(object);
                 }
+
+
+
+ ImGui.popID();
+                ImGui.sameLine();
+
+                sprite = items.getSprite(6);
+                id = sprite.getTexId();
+                texCoords = sprite.getTexCoords();
+                ImGui.pushID(uid++);
+                if (ImGui.imageButton(id, spriteWidth, spriteHeight, texCoords[2].x, texCoords[0].y, texCoords[0].x, texCoords[2].y)) {
+                    GameObject object = Prefabs.generateFlagtop();
+                    levelEditorStuff.getComponent(MouseControls.class).pickupObject(object);
+                }
+                ImGui.popID();
+                ImGui.sameLine();
+
+                sprite = items.getSprite(33);
+                id = sprite.getTexId();
+                texCoords = sprite.getTexCoords();
+                ImGui.pushID(uid++);
+                if (ImGui.imageButton(id, spriteWidth, spriteHeight, texCoords[2].x, texCoords[0].y, texCoords[0].x, texCoords[2].y)) {
+                    GameObject object = Prefabs.generateFlagPole();
+                    levelEditorStuff.getComponent(MouseControls.class).pickupObject(object);
+                }
+                ImGui.popID();
+                ImGui.sameLine();
+
+                Spritesheet pipes = AssetPool.getSpritesheet("assets/images/pipes.png");
+                sprite = pipes.getSprite(0);
+                id = sprite.getTexId();
+                texCoords = sprite.getTexCoords();
+                ImGui.pushID(uid++);
+                if (ImGui.imageButton(id, spriteWidth, spriteHeight, texCoords[2].x, texCoords[0].y, texCoords[0].x, texCoords[2].y)) {
+                    GameObject object = Prefabs.generatePipe(Direction.Down);
+                    levelEditorStuff.getComponent(MouseControls.class).pickupObject(object);
+                }
+                ImGui.popID();
+                ImGui.sameLine();
+
+                sprite = pipes.getSprite(1);
+                id = sprite.getTexId();
+                texCoords = sprite.getTexCoords();
+                ImGui.pushID(uid++);
+                if (ImGui.imageButton(id, spriteWidth, spriteHeight, texCoords[2].x, texCoords[0].y, texCoords[0].x, texCoords[2].y)) {
+                    GameObject object = Prefabs.generatePipe(Direction.Up);
+                    levelEditorStuff.getComponent(MouseControls.class).pickupObject(object);
+                }
+                ImGui.popID();
+                ImGui.sameLine();
+
+                sprite = pipes.getSprite(2);
+                id = sprite.getTexId();
+                texCoords = sprite.getTexCoords();
+                ImGui.pushID(uid++);
+                if (ImGui.imageButton(id, spriteWidth, spriteHeight, texCoords[2].x, texCoords[0].y, texCoords[0].x, texCoords[2].y)) {
+                    GameObject object = Prefabs.generatePipe(Direction.Right);
+                    levelEditorStuff.getComponent(MouseControls.class).pickupObject(object);
+                }
+                ImGui.popID();
+                ImGui.sameLine();
+
+                sprite = pipes.getSprite(3);
+                id = sprite.getTexId();
+                texCoords = sprite.getTexCoords();
+                ImGui.pushID(uid++);
+                if (ImGui.imageButton(id, spriteWidth, spriteHeight, texCoords[2].x, texCoords[0].y, texCoords[0].x, texCoords[2].y)) {
+                    GameObject object = Prefabs.generatePipe(Direction.Left);
+                    levelEditorStuff.getComponent(MouseControls.class).pickupObject(object);
+                }
+                ImGui.popID();
+
+                ImGui.endTabItem();
+            }
+
+            if (ImGui.beginTabItem("Sounds")) {
+                Collection<Sound> sounds = AssetPool.getAllSounds();
+                for (Sound sound : sounds) {
+                    File tmp = new File(sound.getFilepath());
+                    if (ImGui.button(tmp.getName())) {
+                        if (!sound.isPlaying()) {
+                            sound.play();
+                        } else {
+                            sound.stop();
+                        }
+                    }
+
+                    if (ImGui.getContentRegionAvailX() > 100) {
+                        ImGui.sameLine();
+                    }
+                }
+
+                ImGui.endTabItem();
+            }
+            ImGui.endTabBar();
+        }
+
+        ImGui.end();
+    }
+}
