@@ -69,3 +69,15 @@ public class AssetPool {
 
         return null;
     }
+    
+public static Sound addSound(String soundFile, boolean loops) {
+        File file = new File(soundFile);
+        if (sounds.containsKey(file.getAbsolutePath())) {
+            return sounds.get(file.getAbsolutePath());
+        } else {
+            Sound sound = new Sound(file.getAbsolutePath(), loops);
+            AssetPool.sounds.put(file.getAbsolutePath(), sound);
+            return sound;
+        }
+    }
+}
