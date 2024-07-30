@@ -1,0 +1,189 @@
+package renderer;
+
+import components.SpriteRenderer;
+import components.StateMachine;
+import jade.GameObject;
+import jade.Window;
+import org.joml.Matrix4f;
+import org.joml.Vector2f;
+import org.joml.Vector4f;
+import util.AssetPool;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20C.glVertexAttribPointer;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
+import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+
+public class RenderBatch implements Comparable<RenderBatch> {
+    // Vertex
+    // ======
+    // Pos               Color                         tex coords     tex id
+    // float, float,     float, float, float, float    float, float   float
+    private final int POS_SIZE = 2;
+    private final int COLOR_SIZE = 4;
+    private final int TEX_COORDS_SIZE = 2;
+    private final int TEX_ID_SIZE = 1;
+    private final int ENTITY_ID_SIZE = 1;
+
+    private final int POS_OFFSET = 0;
+    private final int COLOR_OFFSET = POS_OFFSET + POS_SIZE * Float.BYTES;
+    private final int TEX_COORDS_OFFSET = COLOR_OFFSET + COLOR_SIZE * Float.BYTES;
+    private final int TEX_ID_OFFSET = TEX_COORDS_OFFSET + TEX_COORDS_SIZE * Float.BYTES;
+    private final int ENTITY_ID_OFFSET = TEX_ID_OFFSET + TEX_ID_SIZE * Float.BYTES;
+    private final int VERTEX_SIZE = 10;
+    private final int VERTEX_SIZE_BYTES = VERTEX_SIZE * Float.BYTES;
+
+    private SpriteRenderer[] sprites;
+    private int numSprites;
+    private boolean hasRoom;
+    private float[] vertices;
+    private int[] texSlots = {0, 1, 2, 3, 4, 5, 6, 7};
+
+    private List<Texture> textures;
+    private int vaoID, vboID;
+    private int maxBatchSize;
+    private int zIndex;
+
+    private Renderer renderer;
+
+    public RenderBatch(int maxBatchSize, int zIndex, Renderer renderer) {
+        this.renderer = renderer;
+
+        this.zIndex = zIndex;
+        this.sprites = new SpriteRenderer[maxBatchSize];
+        this.maxBatchSize = maxBatchSize;
+
+        // 4 vertices quads
+        vertices = new float[maxBatchSize * 4 * VERTEX_SIZE];
+
+        this.numSprites = 0;
+        this.hasRoom = true;
+        this.textures = new ArrayList<>();
+    }
+
+    public void start() {
+        // Generate and bind a Vertex Array Object
+        vaoID = glGenVertexArrays();
+        glBindVertexArray(vaoID);
+
+        // Allocate space for vertices
+        vboID = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, vboID);
+        glBufferData(GL_ARRAY_BUFFER, vertices.length * Float.BYTES, GL_DYNAMIC_DRAW);
+
+        // Create and upload indices buffer
+        int eboID = glGenBuffers();
+        int[] indices = generateIndices();
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboID);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
+
+        // Enable the buffer attribute pointers
+        glVertexAttribPointer(0, POS_SIZE, GL_FLOAT, false, VERTEX_SIZE_BYTES, POS_OFFSET);
+        glEnableVertexAttribArray(0);
+
+        glVertexAttribPointer(1, COLOR_SIZE, GL_FLOAT, false, VERTEX_SIZE_BYTES, COLOR_OFFSET);
+        glEnableVertexAttribArray(1);
+
+        glVertexAttribPointer(2, TEX_COORDS_SIZE, GL_FLOAT, false, VERTEX_SIZE_BYTES, TEX_COORDS_OFFSET);
+        glEnableVertexAttribArray(2);
+
+        glVertexAttribPointer(3, TEX_ID_SIZE, GL_FLOAT, false, VERTEX_SIZE_BYTES, TEX_ID_OFFSET);
+        glEnableVertexAttribArray(3);
+
+        glVertexAttribPointer(4, ENTITY_ID_SIZE, GL_FLOAT, false, VERTEX_SIZE_BYTES, ENTITY_ID_OFFSET);
+        glEnableVertexAttribArray(4);
+    }
+
+    public void addSprite(SpriteRenderer spr) {
+        // Get index and add renderObject
+        int index = this.numSprites;
+        this.sprites[index] = spr;
+        this.numSprites++;
+
+        if (spr.getTexture() != null) {
+            if (!textures.contains(spr.getTexture())) {
+                textures.add(spr.getTexture());
+            }
+        }
+
+        // Add properties to local vertices array
+        loadVertexProperties(index);
+
+        if (numSprites >= this.maxBatchSize) {
+            this.hasRoom = false;
+        }
+    }
+
+    public void render() {
+        boolean rebufferData = false;
+        for (int i=0; i < numSprites; i++) {
+            SpriteRenderer spr = sprites[i];
+            if (spr.isDirty()) {
+                if (!hasTexture(spr.getTexture())) {
+                    this.renderer.destroyGameObject(spr.gameObject);
+                    this.renderer.add(spr.gameObject);
+                } else {
+                    loadVertexProperties(i);
+                    spr.setClean();
+                    rebufferData = true;
+                }
+            }
+
+            // TODO: get better solution for this
+            if (spr.gameObject.transform.zIndex != this.zIndex) {
+                destroyIfExists(spr.gameObject);
+                renderer.add(spr.gameObject);
+                i--;
+            }
+        }
+        if (rebufferData) {
+            glBindBuffer(GL_ARRAY_BUFFER, vboID);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, vertices);
+        }
+
+        // Use shader
+        Shader shader = Renderer.getBoundShader();
+        shader.uploadMat4f("uProjection", Window.getScene().camera().getProjectionMatrix());
+        shader.uploadMat4f("uView", Window.getScene().camera().getViewMatrix());
+        for (int i=0; i < textures.size(); i++) {
+            glActiveTexture(GL_TEXTURE0 + i + 1);
+            textures.get(i).bind();
+        }
+        shader.uploadIntArray("uTextures", texSlots);
+
+        glBindVertexArray(vaoID);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+
+        glDrawElements(GL_TRIANGLES, this.numSprites * 6, GL_UNSIGNED_INT, 0);
+
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glBindVertexArray(0);
+
+        for (int i=0; i < textures.size(); i++) {
+            textures.get(i).unbind();
+        }
+        shader.detach();
+    }
+
+    public boolean destroyIfExists(GameObject go) {
+        SpriteRenderer sprite = go.getComponent(SpriteRenderer.class);
+        for (int i=0; i < numSprites; i++) {
+            if (sprites[i] == sprite) {
+                for (int j=i; j < numSprites - 1; j++) {
+                    sprites[j] = sprites[j + 1];
+                    sprites[j].setDirty();
+                }
+                numSprites--;
+                return true;
+            }
+        }
+
+        return false;
+    }
